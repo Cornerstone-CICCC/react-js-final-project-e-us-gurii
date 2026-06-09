@@ -1,0 +1,67 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// USERS TABLE:
+model User {
+  id        String   @id @default(uuid())
+  firstname String 
+  lastname  String
+  email     String   @unique
+  password  String
+  trips     Trip[]   
+  createdAt DateTime @default(now())
+}
+
+// CITY TABLE:
+model City {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  country   String
+  latitude  Float
+  longitude Float
+  trips     Trip[]
+  locations Location[]
+}
+
+// MAIN TRIP TABLE:
+model Trip {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityId      String
+  city        City         @relation(fields: [cityId], references: [id])
+  startDate   DateTime     
+  endDate     DateTime     
+  budget      Float        
+  activities  Activity[]
+  createdAt   DateTime     @default(now())
+}
+
+// LOCATION TABLE:
+model Location {
+  id            String     @id @default(uuid())
+  cityId        String
+  city          City       @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  name          String
+  latitude      Float
+  longitude     Float    
+  estimatedCost Float
+  activities    Activity[]
+}
+
+// ACTIVITIES TABLE:
+model Activity {
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+  date        DateTime
+  order       Int
+}
