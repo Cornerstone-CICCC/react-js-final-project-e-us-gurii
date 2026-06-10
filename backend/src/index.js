@@ -1,11 +1,13 @@
 import dotenv from "dotenv";
-// Inicializa o dotenv antes de importar o prisma
+
 dotenv.config();
 
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import prisma from "./db/prisma.js";
+import authRoutes from "./routes/authRoutes.js";
+import tripRoutes from "./routes/tripRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,20 +17,23 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-// Rota de teste
+// ROUTES:
+app.use("/api/auth", authRoutes); // LOGIN
+app.use("/api/trips", tripRoutes); // TRIPS
+
 app.get("/health", async (req, res) => {
   try {
     const citiesCount = await prisma.city.count();
     res.status(200).json({
       status: "OK",
-      message: "Backend e Prisma conectados ao Neon com sucesso!",
+      message: "Backend and Prisma have successfully connected to Neon!",
       totalCidadesCadastradas: citiesCount,
     });
   } catch (error) {
-    console.error("Erro ao conectar ao banco:", error);
+    console.error("Error connecting to the database:", error);
     res.status(500).json({
       status: "ERROR",
-      message: "Erro ao conectar ao banco de dados.",
+      message: "Error connecting to the database:",
       error: error.message,
     });
   }
