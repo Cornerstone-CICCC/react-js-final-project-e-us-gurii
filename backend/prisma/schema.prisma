@@ -1,0 +1,36 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  trips     Trip[]   
+  createdAt DateTime @default(now())
+}
+
+model Trip {
+  id          String   @id @default(uuid())
+  destination String
+  country     String
+  startDate   DateTime
+  endDate     DateTime
+  currency    String
+  fxRate      Float
+  flightCost     Float    @default(0)
+  lodgingCost    Float    @default(0)
+  foodCost       Float    @default(0)
+  activitiesCost Float    @default(0)
+  totalCost      Float    @default(0)
+  places      Json     
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
