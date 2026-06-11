@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Compass, Mail, Lock, Eye, EyeOff, ArrowRight, Globe, ChevronDown } from 'lucide-react';
 import { registerUser, loginUser, createTrip } from '../lib/api';
+import { useToast } from '../components/Toast';
 
 function GoogleIcon() {
   return (
@@ -24,6 +25,7 @@ function AppleIcon() {
 
 function AuthPage({ user, onLogin, navigate }) {
   const location = useLocation();
+  const toast = useToast();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -43,6 +45,7 @@ function AuthPage({ user, onLogin, navigate }) {
         console.error('Could not save pending trip:', err);
       }
       localStorage.removeItem('voyageplan-pending-trip');
+      toast('Itinerary created', 'success');
       navigate('/budget');
       return;
     }
@@ -59,9 +62,11 @@ function AuthPage({ user, onLogin, navigate }) {
       }
       const data = await loginUser({ email: form.email, password: form.password });
       onLogin(data.token, data.user);
+      toast(`Welcome${data.user?.name ? `, ${data.user.name}` : ''}!`, 'success');
       await afterLogin(data.token);
     } catch (err) {
       setError(err.message);
+      toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
