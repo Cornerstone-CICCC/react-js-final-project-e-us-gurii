@@ -1,30 +1,56 @@
-export const currencyOptions = [
-  { code: 'USD', symbol: '$' },
-  { code: 'CAD', symbol: 'C$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'BRL', symbol: 'R$' },
-  { code: 'JPY', symbol: '¥' },
+// Currencies supported by the Frankfurter API (used for live conversion).
+export const SUPPORTED_CURRENCIES = [
+  'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD',
+  'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD',
+  'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
 ];
 
-// Map a destination country to one of our supported currencies; fall back to USD.
+// Currencies offered in the selector (the "total" display currency).
+export const currencyOptions = [
+  { code: 'USD' }, { code: 'EUR' }, { code: 'GBP' }, { code: 'CAD' }, { code: 'AUD' },
+  { code: 'BRL' }, { code: 'JPY' }, { code: 'MXN' }, { code: 'CHF' }, { code: 'CNY' },
+  { code: 'INR' }, { code: 'SGD' },
+];
+
+// Map a destination country to its currency.
 const COUNTRY_CURRENCY = {
-  us: 'USD',
-  ca: 'CAD',
-  br: 'BRL',
-  jp: 'JPY',
+  us: 'USD', ca: 'CAD', mx: 'MXN', br: 'BRL', au: 'AUD', nz: 'NZD',
+  gb: 'GBP', ch: 'CHF', dk: 'DKK', no: 'NOK', se: 'SEK', cz: 'CZK', pl: 'PLN',
+  hu: 'HUF', ro: 'RON', bg: 'BGN', tr: 'TRY', is: 'ISK',
+  jp: 'JPY', cn: 'CNY', hk: 'HKD', sg: 'SGD', kr: 'KRW', in: 'INR', id: 'IDR',
+  my: 'MYR', th: 'THB', ph: 'PHP', il: 'ILS', za: 'ZAR',
   // Eurozone
   fr: 'EUR', de: 'EUR', it: 'EUR', es: 'EUR', pt: 'EUR', nl: 'EUR', be: 'EUR',
   at: 'EUR', ie: 'EUR', fi: 'EUR', gr: 'EUR', lu: 'EUR', sk: 'EUR', si: 'EUR',
   ee: 'EUR', lv: 'EUR', lt: 'EUR', cy: 'EUR', mt: 'EUR', hr: 'EUR',
 };
 
+// The destination's local currency, or USD when it isn't one we can convert.
 export function currencyForCountry(countryCode) {
-  return COUNTRY_CURRENCY[(countryCode || '').toLowerCase()] || 'USD';
+  const currency = COUNTRY_CURRENCY[(countryCode || '').toLowerCase()];
+  return currency && SUPPORTED_CURRENCIES.includes(currency) ? currency : 'USD';
+}
+
+export function convertFromUSD(usdValue, currency, rates) {
+  const rate = rates?.[currency] ?? 1;
+  return (usdValue || 0) * rate;
+}
+
+// Convert between two currencies using USD-based rates. Same currency → no conversion.
+export function convertCurrency(value, fromCode, toCode, rates) {
+  if (!value) return 0;
+  if (!fromCode || !toCode || fromCode === toCode) return value;
+  const fromRate = rates?.[fromCode] ?? 1;
+  const toRate = rates?.[toCode] ?? 1;
+  return value * (toRate / fromRate);
 }
 
 export function formatCurrency(value, currency = 'USD') {
-  const symbol = currencyOptions.find((entry) => entry.code === currency)?.symbol ?? '$';
-  return `${symbol}${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value || 0);
+  } catch {
+    return `${Math.round(value || 0).toLocaleString()} ${currency}`;
+  }
 }
 
 export function estimateRouteBreakdown(selectedPlaces, currency = 'USD', fxRate = 1, flightOverride = null) {

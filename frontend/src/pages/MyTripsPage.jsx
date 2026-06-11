@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Eye, Trash2, Plus, Compass, PiggyBank } from 'lucide-react';
 import { getMyTrips, deleteTrip } from '../lib/api';
 import { formatCurrency } from '../lib/pricing';
+import { useToast } from '../components/Toast';
 
 function formatRange(trip) {
   if (!trip.startDate) return '—';
@@ -12,6 +13,7 @@ function formatRange(trip) {
 }
 
 function MyTripsPage({ token }) {
+  const toast = useToast();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,8 +41,10 @@ function MyTripsPage({ token }) {
     try {
       await deleteTrip(id, token);
       setTrips((current) => current.filter((trip) => trip.id !== id));
+      toast('Trip deleted', 'success');
     } catch (err) {
       setError(err.message);
+      toast(err.message, 'error');
     } finally {
       setDeletingId(null);
     }
