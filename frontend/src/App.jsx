@@ -24,21 +24,23 @@ function App() {
   });
   const [token, setToken] = useState(() => localStorage.getItem('voyageplan-token'));
   const [currency, setCurrency] = useState('USD');
-  const [fxRate, setFxRate] = useState(1);
+  // USD-based conversion rates for every supported currency, fetched once.
+  const [rates, setRates] = useState({ USD: 1 });
 
   useEffect(() => {
+    let cancelled = false;
     async function loadRates() {
       try {
-        const response = await fetch('https://api.frankfurter.app/latest?from=USD&to=CAD,EUR,BRL,JPY');
+        const response = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
         const data = await response.json();
-        const rate = data.rates?.[currency] ?? 1;
-        setFxRate(rate);
+        if (!cancelled) setRates({ USD: 1, ...(data.rates || {}) });
       } catch {
-        setFxRate(1);
+        if (!cancelled) setRates({ USD: 1 });
       }
     }
     loadRates();
-  }, [currency]);
+    return () => { cancelled = true; };
+  }, []);
 
   const handleLogin = (nextToken, nextUser) => {
     localStorage.setItem('voyageplan-token', nextToken);
@@ -71,7 +73,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage user={user} onLogout={handleLogout} />} />
         <Route path="/auth" element={<AuthPage user={user} onLogin={handleLogin} token={token} navigate={navigate} />} />
-        <Route path="/planner" element={<PlannerPage currency={currency} setCurrency={setCurrency} fxRate={fxRate} token={token} navigate={navigate} />} />
+        <Route path="/planner" element={<PlannerPage currency={currency} setCurrency={setCurrency} rates={rates} token={token} navigate={navigate} />} />
         <Route
           path="/budget"
           element={(
@@ -100,7 +102,7 @@ function App() {
           path="/trips/:id"
           element={(
             <ProtectedRoute user={user}>
-              <PlannerPage currency={currency} setCurrency={setCurrency} fxRate={fxRate} token={token} navigate={navigate} />
+              <PlannerPage currency={currency} setCurrency={setCurrency} rates={rates} token={token} navigate={navigate} />
             </ProtectedRoute>
           )}
         />

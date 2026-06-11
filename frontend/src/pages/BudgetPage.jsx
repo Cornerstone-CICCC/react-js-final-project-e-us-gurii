@@ -55,9 +55,8 @@ function BudgetPage({ token }) {
     return diff > 0 ? diff : null;
   }, [trip]);
 
-  // Synthetic budget ceiling (20% headroom) since the backend doesn't store a limit.
+  // Synthetic budget ceiling (20% headroom) for the "potential savings" insight.
   const limit = Math.max(50, Math.ceil((total * 1.2) / 50) * 50);
-  const spentPct = limit > 0 ? Math.min(100, Math.round((total / limit) * 100)) : 0;
   const savingsPct = limit > 0 ? Math.round(((limit - total) / limit) * 100) : 0;
   const dailyAverage = nights ? total / nights : total;
 
@@ -98,36 +97,19 @@ function BudgetPage({ token }) {
 
   return (
     <main className="max-w-7xl mx-auto px-6 md:px-16 py-10">
-      {/* Title & Budget Health */}
-      <div className="mb-12 grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-        <div className="lg:col-span-8">
-          <h1 className="font-headline-lg text-headline-lg text-on-surface mb-1">{trip.destination} Budget Analysis</h1>
-          <p className="text-on-surface-variant font-body-md">
-            {nights ? `Managing your ${nights}-day exploration of ${trip.destination}.` : `Your itinerary for ${trip.destination}.`}
-          </p>
-          {Array.isArray(trip.places) && trip.places.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {trip.places.map((place) => (
-                <span key={place.id || place.name} className="rounded-full bg-surface-container px-3 py-1 text-caption text-on-surface-variant">{place.name}</span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <div className="lg:col-span-4 bg-surface-container-low p-6 rounded-xl border border-outline-variant">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-label-md text-label-md uppercase text-on-surface-variant">Budget Health</span>
-            <span className={`font-title-md text-title-md ${spentPct < 100 ? 'text-secondary' : 'text-error'}`}>
-              {spentPct < 100 ? 'Within Limit' : 'Over Limit'}
-            </span>
+      {/* Title */}
+      <div className="mb-12">
+        <h1 className="font-headline-lg text-headline-lg text-on-surface mb-1">{trip.destination} Budget Analysis</h1>
+        <p className="text-on-surface-variant font-body-md">
+          {nights ? `Managing your ${nights}-day exploration of ${trip.destination}.` : `Your itinerary for ${trip.destination}.`}
+        </p>
+        {Array.isArray(trip.places) && trip.places.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {trip.places.map((place) => (
+              <span key={place.id || place.name} className="rounded-full bg-surface-container px-3 py-1 text-caption text-on-surface-variant">{place.name}</span>
+            ))}
           </div>
-          <div className="w-full bg-outline-variant h-3 rounded-full overflow-hidden">
-            <div className={`h-full ${spentPct < 100 ? 'bg-secondary' : 'bg-error'}`} style={{ width: `${spentPct}%` }} />
-          </div>
-          <div className="flex justify-between mt-2 text-caption font-caption text-on-surface-variant">
-            <span>Spent: {formatCurrency(total, currency)}</span>
-            <span>Limit: {formatCurrency(limit, currency)}</span>
-          </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Bento Grid */}

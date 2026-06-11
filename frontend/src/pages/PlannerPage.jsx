@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import { normalizeGeoapifyResult } from '../lib/places';
 import { createTrip, getTrip, updateTrip } from '../lib/api';
-import { estimateRouteBreakdown, formatCurrency, currencyForCountry, currencyOptions } from '../lib/pricing';
+import { estimateRouteBreakdown, formatCurrency, currencyForCountry, currencyOptions, convertCurrency } from '../lib/pricing';
+import { useToast } from '../components/Toast';
 
 const categoryOptions = [
   { key: 'all', label: 'All', icon: Compass },
@@ -133,7 +134,8 @@ const removePopupContent = (place, buttonId) => `
     <button id="${buttonId}" style="margin-top:8px;width:100%;background:#ba1a1a;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Remove from Trip</button>
   </div>`;
 
-function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
+function PlannerPage({ currency, setCurrency, rates, token, navigate }) {
+  const toast = useToast();
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef([]);
@@ -183,6 +185,8 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
     return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
   }, [selectedPlaces]);
   const destCountry = tripCountry || placesCountry;
+  // Costs are denominated in the destination's local currency; only other currencies convert.
+  const localCurrency = currencyForCountry(destCountry);
   const lastDestCountry = useRef(null);
   useEffect(() => {
     if (destCountry && destCountry !== lastDestCountry.current) {
@@ -209,7 +213,8 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
     return () => { cancelled = true; };
   }, [isEdit, editTripId, token]);
 
-  const breakdown = useMemo(() => estimateRouteBreakdown(selectedPlaces, currency, fxRate), [selectedPlaces, currency, fxRate]);
+  // USD-base breakdown; converted to a display currency at render/save time.
+  const breakdown = useMemo(() => estimateRouteBreakdown(selectedPlaces), [selectedPlaces]);
 
   // Add a place, enriching it with a real photo from the Place Details API when one exists.
   const addPlaceWithImage = useCallback(async (place) => {
@@ -456,30 +461,39 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, editTrip]);
 
-  const buildItineraryPayload = () => ({
-    destination: tripDest || selectedPlaces[0]?.city || 'My Trip',
-    country: destCountry || selectedPlaces[0]?.countryCode || null,
-    dates: { from: tripFrom || null, to: tripTo || null },
-    currency,
-    fxRate,
-    // Store the full place objects (incl. cost fields) so the trip can be re-edited later.
-    places: selectedPlaces.map((place) => ({
-      id: place.id,
-      name: place.name,
-      category: place.category,
-      city: place.city,
-      area: place.area,
-      countryCode: place.countryCode,
-      lat: place.lat,
-      lng: place.lng,
-      baseCost: place.baseCost,
-      flightEstimate: place.flightEstimate,
-      foodEstimate: place.foodEstimate,
-      activityEstimate: place.activityEstimate,
-      image: place.image ?? null,
-    })),
-    costs: breakdown,
-  });
+  const buildItineraryPayload = () => {
+    const rate = convertCurrency(1, localCurrency, currency, rates); // local → display currency
+    return {
+      destination: tripDest || selectedPlaces[0]?.city || 'My Trip',
+      country: destCountry || selectedPlaces[0]?.countryCode || null,
+      dates: { from: tripFrom || null, to: tripTo || null },
+      currency,
+      fxRate: rate,
+      // Store the full place objects (incl. cost fields) so the trip can be re-edited later.
+      places: selectedPlaces.map((place) => ({
+        id: place.id,
+        name: place.name,
+        category: place.category,
+        city: place.city,
+        area: place.area,
+        countryCode: place.countryCode,
+        lat: place.lat,
+        lng: place.lng,
+        baseCost: place.baseCost,
+        flightEstimate: place.flightEstimate,
+        foodEstimate: place.foodEstimate,
+        activityEstimate: place.activityEstimate,
+        image: place.image ?? null,
+      })),
+      costs: {
+        flight: convertCurrency(breakdown.flight, localCurrency, currency, rates),
+        lodging: convertCurrency(breakdown.lodging, localCurrency, currency, rates),
+        food: convertCurrency(breakdown.food, localCurrency, currency, rates),
+        activities: convertCurrency(breakdown.activities, localCurrency, currency, rates),
+        total: convertCurrency(breakdown.total, localCurrency, currency, rates),
+      },
+    };
+  };
 
   const handleSaveItinerary = async () => {
     if (selectedPlaces.length === 0) {
@@ -502,13 +516,16 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
     try {
       if (isEdit) {
         await updateTrip(editTripId, payload, token);
+        toast('Itinerary updated', 'success');
         navigate('/my-trips');
       } else {
         await createTrip(payload, token);
+        toast('Itinerary created', 'success');
         navigate('/budget');
       }
     } catch (err) {
       setSaveError(err.message);
+      toast(err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -601,7 +618,9 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
                 <div className="flex-1 min-w-0">
                   <h4 className="font-title-md text-on-surface truncate">{place.name}</h4>
                   <p className="text-caption text-on-surface-variant truncate">{place.area || place.city}</p>
-                  <p className="text-caption font-semibold text-secondary">{formatCurrency(estimateRouteBreakdown([place], currency, fxRate, 0).total, currency)}</p>
+                  <p className="text-caption font-semibold text-secondary">
+                    {formatCurrency(estimateRouteBreakdown([place], 'USD', 1, 0).total, currencyForCountry(place.countryCode))}
+                  </p>
                 </div>
                 <button onClick={() => removePlace(place.id)} aria-label={`Remove ${place.name}`} className="text-outline hover:text-error transition-colors p-1.5 rounded-full hover:bg-error-container">
                   <Trash2 size={18} />
@@ -616,13 +635,16 @@ function PlannerPage({ currency, setCurrency, fxRate, token, navigate }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-caption text-on-surface-variant">Estimated route total</p>
-              <p className="text-title-md font-bold text-on-surface">{formatCurrency(breakdown.total, currency)}</p>
+              <p className="text-title-md font-bold text-on-surface">{formatCurrency(convertCurrency(breakdown.total, localCurrency, currency, rates), currency)}</p>
+              <p className="text-caption text-on-surface-variant">
+                {currency === localCurrency ? 'Shown in the destination’s local currency.' : `Converted from ${localCurrency}.`}
+              </p>
             </div>
             <select
               className="rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-label-md text-on-surface outline-none"
               value={currency}
               onChange={(event) => setCurrency(event.target.value)}
-              title="Defaults to the destination's currency — change to convert"
+              title="Converts the total to the selected currency"
             >
               {currencyOptions.map((option) => (
                 <option key={option.code} value={option.code}>{option.code}</option>
