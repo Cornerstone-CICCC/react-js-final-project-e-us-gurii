@@ -1,17 +1,30 @@
-import { useEffect, useState } from 'react';
-import { Link, Route, Routes, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage';
-import PlannerPage from './pages/PlannerPage';
-import BudgetPage from './pages/BudgetPage';
-import MyTripsPage from './pages/MyTripsPage';
-import UserMenu from './components/UserMenu';
+import { useEffect, useState } from "react";
+import {
+  Link,
+  Route,
+  Routes,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import AuthPage from "./pages/AuthPage";
+import PlannerPage from "./pages/PlannerPage";
+import BudgetPage from "./pages/BudgetPage";
+import MyTripsPage from "./pages/MyTripsPage";
+import UserMenu from "./components/UserMenu";
 
 // Guards routes that require a logged-in user.
 function ProtectedRoute({ user, children }) {
   const location = useLocation();
-  if (!user) return <Navigate to="/auth" state={{ from: location.pathname + location.search }} replace />;
+  if (!user)
+    return (
+      <Navigate
+        to="/auth"
+        state={{ from: location.pathname + location.search }}
+        replace
+      />
+    );
   return children;
 }
 
@@ -20,55 +33,68 @@ function App() {
   const location = useLocation();
 
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('voyageplan-user');
+    const stored = localStorage.getItem("voyageplan-user");
     return stored ? JSON.parse(stored) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('voyageplan-token'));
-  const [navOpen, setNavOpen] = useState(false);
-  const [currency, setCurrency] = useState('USD');
-  // USD-based conversion rates for every supported currency, fetched once.
-  const [rates, setRates] = useState({ USD: 1 });
+  const [token, setToken] = useState(() =>
+    localStorage.getItem("voyageplan-token"),
+  );
+  const [currency, setCurrency] = useState("USD");
+  const [fxRate, setFxRate] = useState(1);
 
   useEffect(() => {
-    let cancelled = false;
     async function loadRates() {
       try {
-        const response = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
+        const response = await fetch(
+          "https://api.frankfurter.app/latest?from=USD&to=CAD,EUR,BRL,JPY",
+        );
         const data = await response.json();
-        if (!cancelled) setRates({ USD: 1, ...(data.rates || {}) });
+        const rate = data.rates?.[currency] ?? 1;
+        setFxRate(rate);
       } catch {
-        if (!cancelled) setRates({ USD: 1 });
+        setFxRate(1);
       }
     }
     loadRates();
-    return () => { cancelled = true; };
-  }, []);
+  }, [currency]);
 
   const handleLogin = (nextToken, nextUser) => {
-    localStorage.setItem('voyageplan-token', nextToken);
-    localStorage.setItem('voyageplan-user', JSON.stringify(nextUser));
+    localStorage.setItem("voyageplan-token", nextToken);
+    localStorage.setItem("voyageplan-user", JSON.stringify(nextUser));
     setToken(nextToken);
     setUser(nextUser);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('voyageplan-token');
-    localStorage.removeItem('voyageplan-user');
+    localStorage.removeItem("voyageplan-token");
+    localStorage.removeItem("voyageplan-user");
     setToken(null);
     setUser(null);
-    navigate('/');
+    navigate("/");
   };
 
   return (
     <div className="min-h-screen">
-      {location.pathname !== '/' && location.pathname !== '/auth' && (
-        <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
-          <Link to="/" className="font-display-lg text-xl md:text-2xl font-extrabold tracking-tight text-primary">VoyagePlan</Link>
+      {location.pathname !== "/" && location.pathname !== "/auth" && (
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+          <img
+            src="/images/flyandgo.png"
+            alt="Logo Fly&Go"
+            className="h-28 w-auto object-contain"
+          />
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2">
-              <Link to="/" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Home</Link>
-              <Link to="/planner" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Planner</Link>
-            </div>
+            <Link
+              to="/"
+              className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary"
+            >
+              Home
+            </Link>
+            <Link
+              to="/planner"
+              className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary"
+            >
+              Planner
+            </Link>
             <UserMenu user={user} onLogout={handleLogout} />
             <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setNavOpen((open) => !open)}>
               {navOpen ? <X size={24} /> : <Menu size={24} />}
@@ -84,40 +110,70 @@ function App() {
       )}
 
       <Routes>
-        <Route path="/" element={<HomePage user={user} onLogout={handleLogout} />} />
-        <Route path="/auth" element={<AuthPage user={user} onLogin={handleLogin} token={token} navigate={navigate} />} />
-        <Route path="/planner" element={<PlannerPage currency={currency} setCurrency={setCurrency} rates={rates} token={token} navigate={navigate} />} />
+        <Route
+          path="/"
+          element={<HomePage user={user} onLogout={handleLogout} />}
+        />
+        <Route
+          path="/auth"
+          element={
+            <AuthPage
+              user={user}
+              onLogin={handleLogin}
+              token={token}
+              navigate={navigate}
+            />
+          }
+        />
+        <Route
+          path="/planner"
+          element={
+            <PlannerPage
+              currency={currency}
+              setCurrency={setCurrency}
+              fxRate={fxRate}
+              token={token}
+              navigate={navigate}
+            />
+          }
+        />
         <Route
           path="/budget"
-          element={(
+          element={
             <ProtectedRoute user={user}>
               <BudgetPage token={token} />
             </ProtectedRoute>
-          )}
+          }
         />
         <Route
           path="/budget/:id"
-          element={(
+          element={
             <ProtectedRoute user={user}>
               <BudgetPage token={token} />
             </ProtectedRoute>
-          )}
+          }
         />
         <Route
           path="/my-trips"
-          element={(
+          element={
             <ProtectedRoute user={user}>
               <MyTripsPage token={token} />
             </ProtectedRoute>
-          )}
+          }
         />
         <Route
           path="/trips/:id"
-          element={(
+          element={
             <ProtectedRoute user={user}>
-              <PlannerPage currency={currency} setCurrency={setCurrency} rates={rates} token={token} navigate={navigate} />
+              <PlannerPage
+                currency={currency}
+                setCurrency={setCurrency}
+                fxRate={fxRate}
+                token={token}
+                navigate={navigate}
+              />
             </ProtectedRoute>
-          )}
+          }
         />
       </Routes>
     </div>
