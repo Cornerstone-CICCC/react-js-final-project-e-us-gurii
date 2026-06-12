@@ -16,11 +16,14 @@ import {
   Users,
   CloudOff,
   User,
+  Menu,
+  X,
 } from "lucide-react";
 import UserMenu from "../components/UserMenu";
 
 function HomePage({ user, onLogout }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [destination, setDestination] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -94,7 +97,7 @@ function HomePage({ user, onLogout }) {
     <div className="min-h-screen bg-surface text-on-surface font-body-md">
       {/* Top Navigation */}
       <header className="bg-surface sticky top-0 z-50">
-        <nav className="flex justify-between items-center w-full px-6 md:px-16 py-2 max-w-7xl mx-auto">
+        <nav className="relative flex justify-between items-center w-full px-6 md:px-16 py-2 max-w-7xl mx-auto">
           <div className="flex items-center gap-16">
             <img
               src="/images/flyandgo.png"
@@ -139,14 +142,16 @@ function HomePage({ user, onLogout }) {
                 >
                   <Settings size={24} />
                 </button>
-              </div>
+              </>
             ) : null}
             <UserMenu user={user} onLogout={onLogout} />
-            <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setMenuOpen((open) => !open)}>
-              {menuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {user ? (
+              <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setMenuOpen((open) => !open)}>
+                {menuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            ) : null}
           </div>
-          {menuOpen ? (
+          {user && menuOpen ? (
             <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-1 border-t border-outline-variant bg-surface px-4 py-3 shadow-md md:hidden">
               <Link to="/planner" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Plan</Link>
               {user ? (
@@ -171,7 +176,7 @@ function HomePage({ user, onLogout }) {
           </div>
 
           <div className="relative z-10 w-full max-w-7xl px-6 md:px-16 text-center">
-            <h1 className="text-5xl md:text-7xl font-display-lg font-extrabold text-white drop-shadow-lg mb-60 max-w-4xl mx-auto leading-tight">
+            <h1 className="text-5xl md:text-7xl font-display-lg font-extrabold text-white drop-shadow-lg mb-16 md:mb-60 max-w-4xl mx-auto leading-tight">
               Your Trip, <span className="text-blue-400">Our Map.</span>
             </h1>
 
