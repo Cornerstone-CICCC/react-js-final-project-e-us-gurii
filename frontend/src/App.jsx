@@ -96,7 +96,16 @@ function App() {
               Planner
             </Link>
             <UserMenu user={user} onLogout={handleLogout} />
+            <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setNavOpen((open) => !open)}>
+              {navOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+          {navOpen ? (
+            <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-1 border-t border-outline-variant bg-surface px-4 py-3 shadow-md md:hidden">
+              <Link to="/" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Home</Link>
+              <Link to="/planner" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Planner</Link>
+            </div>
+          ) : null}
         </nav>
       )}
 

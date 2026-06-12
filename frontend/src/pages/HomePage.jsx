@@ -124,7 +124,7 @@ function HomePage({ user, onLogout }) {
               </a>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
                 <button
@@ -139,10 +139,22 @@ function HomePage({ user, onLogout }) {
                 >
                   <Settings size={24} />
                 </button>
-              </>
+              </div>
             ) : null}
             <UserMenu user={user} onLogout={onLogout} />
+            <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setMenuOpen((open) => !open)}>
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+          {menuOpen ? (
+            <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-1 border-t border-outline-variant bg-surface px-4 py-3 shadow-md md:hidden">
+              <Link to="/planner" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Plan</Link>
+              {user ? (
+                <Link to="/my-trips" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">My Trips</Link>
+              ) : null}
+              <a href="#" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Explore</a>
+            </div>
+          ) : null}
         </nav>
       </header>
 
