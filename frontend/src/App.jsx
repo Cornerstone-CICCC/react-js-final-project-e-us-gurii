@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Route, Routes, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import PlannerPage from './pages/PlannerPage';
@@ -23,6 +24,7 @@ function App() {
     return stored ? JSON.parse(stored) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem('voyageplan-token'));
+  const [navOpen, setNavOpen] = useState(false);
   const [currency, setCurrency] = useState('USD');
   // USD-based conversion rates for every supported currency, fetched once.
   const [rates, setRates] = useState({ USD: 1 });
@@ -60,13 +62,24 @@ function App() {
   return (
     <div className="min-h-screen">
       {location.pathname !== '/' && location.pathname !== '/auth' && (
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link to="/" className="font-display-lg text-2xl font-extrabold tracking-tight text-primary">VoyagePlan</Link>
+        <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
+          <Link to="/" className="font-display-lg text-xl md:text-2xl font-extrabold tracking-tight text-primary">VoyagePlan</Link>
           <div className="flex items-center gap-2">
-            <Link to="/" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Home</Link>
-            <Link to="/planner" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Planner</Link>
+            <div className="hidden md:flex items-center gap-2">
+              <Link to="/" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Home</Link>
+              <Link to="/planner" className="rounded-full px-4 py-2 text-sm text-on-surface-variant transition hover:bg-surface-container hover:text-primary">Planner</Link>
+            </div>
             <UserMenu user={user} onLogout={handleLogout} />
+            <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setNavOpen((open) => !open)}>
+              {navOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+          {navOpen ? (
+            <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-1 border-t border-outline-variant bg-surface px-4 py-3 shadow-md md:hidden">
+              <Link to="/" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Home</Link>
+              <Link to="/planner" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Planner</Link>
+            </div>
+          ) : null}
         </nav>
       )}
 

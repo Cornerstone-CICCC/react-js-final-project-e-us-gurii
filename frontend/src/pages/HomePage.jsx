@@ -16,11 +16,14 @@ import {
   Users,
   CloudOff,
   User,
+  Menu,
+  X,
 } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 
 function HomePage({ user, onLogout }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [destination, setDestination] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -91,9 +94,9 @@ function HomePage({ user, onLogout }) {
     <div className="min-h-screen bg-surface text-on-surface font-body-md">
       {/* Top Navigation */}
       <header className="bg-surface sticky top-0 z-50">
-        <nav className="flex justify-between items-center w-full px-6 md:px-16 py-2 max-w-7xl mx-auto">
-          <div className="flex items-center gap-16">
-            <span className="font-display-lg text-display-lg font-extrabold text-primary cursor-pointer">VoyagePlan</span>
+        <nav className="relative flex justify-between items-center w-full px-4 md:px-16 py-2 max-w-7xl mx-auto">
+          <div className="flex items-center gap-8 lg:gap-16">
+            <Link to="/" className="font-display-lg text-2xl md:text-display-lg font-extrabold text-primary">VoyagePlan</Link>
             <div className="hidden md:flex items-center gap-10">
               <Link to="/planner" className="font-body-md text-body-md text-primary border-b-2 border-primary pb-1">Plan</Link>
               {user ? (
@@ -102,19 +105,31 @@ function HomePage({ user, onLogout }) {
               <a className="font-body-md text-body-md text-on-surface-variant hover:text-primary-container transition-colors" href="#">Explore</a>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {user ? (
-              <>
+              <div className="hidden md:flex items-center gap-1">
                 <button className="p-2 text-on-surface-variant hover:text-primary transition-colors active:scale-95 duration-150" aria-label="Notifications">
                   <Bell size={24} />
                 </button>
                 <button className="p-2 text-on-surface-variant hover:text-primary transition-colors active:scale-95 duration-150" aria-label="Settings">
                   <Settings size={24} />
                 </button>
-              </>
+              </div>
             ) : null}
             <UserMenu user={user} onLogout={onLogout} />
+            <button type="button" className="md:hidden p-2 text-on-surface-variant" aria-label="Menu" onClick={() => setMenuOpen((open) => !open)}>
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+          {menuOpen ? (
+            <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-1 border-t border-outline-variant bg-surface px-4 py-3 shadow-md md:hidden">
+              <Link to="/planner" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Plan</Link>
+              {user ? (
+                <Link to="/my-trips" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">My Trips</Link>
+              ) : null}
+              <a href="#" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-body-md text-on-surface hover:bg-surface-container">Explore</a>
+            </div>
+          ) : null}
         </nav>
       </header>
 
